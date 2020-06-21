@@ -1,5 +1,10 @@
 package controller
 
+// https://github.com/48723247842/SpotifyDBUSController/blob/master/python_app/SpotifyDBusController.py
+// https://godoc.org/github.com/guelfey/go.dbus#example-Object-Go
+// https://github.com/search?p=4&q=dbus+language%3Ago&type=Repositories
+// https://github.com/hoffoo/spotify-ctrl/blob/master/spotify.go
+
 type Controller struct {
 	dbus godbus.BusObject
 	Abilities struct {
@@ -45,9 +50,9 @@ func ( spotify *Controller ) Metadata() {
 	fmt.Println( metadata )
 }
 
-func ( spotify *Controller ) Next() {
+// func ( spotify *Controller ) Next() {
 
-}
+// }
 
 // func ( spotify *Controller ) Next() {
 // 	info := exec_process( "/bin/bash" , "-c" , "xrandr --prop | grep connected" )

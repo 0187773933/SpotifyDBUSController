@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	spotify := Controller{}
+	spotify := spotify_dbus.Controller{}
 	spotify.Connect()
 	spotify.OpenURI( "spotify:playlist:7BmaNDSoPDLHpxHzXaiJAN" )
 	time.Sleep( 2 * time.Second )

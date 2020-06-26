@@ -1,9 +1,16 @@
-package controller
+package main
+
+import (
+	"fmt"
+	godbus "github.com/godbus/dbus"
+	"time"
+)
 
 // https://github.com/48723247842/SpotifyDBUSController/blob/master/python_app/SpotifyDBusController.py
 // https://godoc.org/github.com/guelfey/go.dbus#example-Object-Go
 // https://github.com/search?p=4&q=dbus+language%3Ago&type=Repositories
 // https://github.com/hoffoo/spotify-ctrl/blob/master/spotify.go
+// https://github.com/sticreations/spotigopher/blob/master/spotigopher/spotigopher.go
 
 type Controller struct {
 	dbus godbus.BusObject
@@ -20,13 +27,16 @@ type Controller struct {
 		MaximumRate string
 		MinimumRate string
 		Rate string
-		Volume string
-		Position string
+		Volume float64
+		Position int64
 		LoopStatus string
 		Playback string
 		Metadata struct {
-			Artist string
+			TrackID string
+			Artist []string
 			Title string
+			Album string
+			TrackNumber int32
 			Rating int
 			Status string
 			Url string
@@ -50,129 +60,108 @@ func ( spotify *Controller ) Metadata() {
 	fmt.Println( metadata )
 }
 
-// func ( spotify *Controller ) Next() {
+func ( spotify *Controller ) PlaybackStatus() ( godbus.Variant ) {
+	playback_status , playback_status_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.PlaybackStatus" )
+	if playback_status_error != nil { fmt.Println( "Could not get Playback Status" ); panic( playback_status_error ) }
+	return playback_status
+}
 
-// }
+func ( spotify *Controller ) UpdateStatus() {
+	// Metadata
+	metadata , metadata_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.Metadata" )
+	if metadata_error != nil { fmt.Println( "Could not get Metadata" ); panic( metadata_error ) }
+	metadata_map := metadata.Value().( map[ string ]godbus.Variant )
+	spotify.Status.Metadata.TrackID = metadata_map["mpris:trackid"].Value().( string )
+	spotify.Status.Metadata.Artist = metadata_map["xesam:artist"].Value().( []string )
+	spotify.Status.Metadata.Title = metadata_map["xesam:title"].Value().( string )
+	spotify.Status.Metadata.Album = metadata_map["xesam:album"].Value().( string )
+	spotify.Status.Metadata.TrackNumber = metadata_map["xesam:trackNumber"].Value().( int32 )
+	spotify.Status.Metadata.Url = metadata_map["xesam:url"].Value().( string )
+	spotify.Status.Metadata.ArtUrl = metadata_map["mpris:artUrl"].Value().( string )
 
-// func ( spotify *Controller ) Next() {
-// 	info := exec_process( "/bin/bash" , "-c" , "xrandr --prop | grep connected" )
-// 	lines := strings.Split( info , "\n" )
-// 	for _ , line := range lines {
-// 		words := strings.Split( line , " " )
-// 		if len( words ) < 3 { continue }
-// 		switch words[ 2 ] {
-// 			case "Primary":
-// 				Name := words[ 0 ]
-// 				size := words[ 3 ]
-// 				size_components := strings.Split( size , "x" )
-// 				X , _ := strconv.Atoi( size_components[ 0 ] )
-// 				Y , _ := strconv.Atoi( strings.Split( size_components[ 1 ] , "+" )[ 0 ] )
-// 				xdo.Monitors.Primary.Name = Name
-// 				xdo.Monitors.Primary.X = X
-// 				xdo.Monitors.Primary.Y = Y
-// 			case "Secondary":
-// 				Name := words[ 0 ]
-// 				size := words[ 3 ]
-// 				size_components := strings.Split( size , "x" )
-// 				X , _ := strconv.Atoi( size_components[ 0 ] )
-// 				Y , _ := strconv.Atoi( strings.Split( size_components[ 1 ] , "+" )[ 0 ] )
-// 				xdo.Monitors.Secondary.Name = Name
-// 				xdo.Monitors.Secondary.X = X
-// 				xdo.Monitors.Secondary.Y = Y
-// 		}
-// 	}
-// }
+	// Playback Status
+	playback_status , playback_status_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.PlaybackStatus" )
+	if playback_status_error != nil { fmt.Println( "Could not get Playback Status" ); panic( playback_status_error ) }
+	spotify.Status.Playback = playback_status.Value().( string )
 
-// func ( xdo *Wrapper ) Attach( options ...int ) {
-// 	number_of_tries := 20
-// 	sleep_milliseconds := 1000
-// 	if len( options ) > 0 {
-// 		number_of_tries = options[0]
-// 	}
-// 	if len( options ) > 1 {
-// 		sleep_milliseconds = options[1]
-// 	}
-// 	duration , _ := time.ParseDuration( strconv.Itoa( sleep_milliseconds ) + "ms")
-// 	for i := 0; i < number_of_tries; i++ {
-// 		cmd := fmt.Sprintf( "xdotool search --desktop 0 --name '%s'" , xdo.Window.Name )
-// 		info := exec_process( "/bin/bash" , "-c" , cmd )
-// 		lines := strings.Split( info , "\n" )
-// 		window_id , error := strconv.Atoi( lines[ 0 ] )
-// 		if error != nil {
-// 			time.Sleep( duration )
-// 		} else {
-// 			xdo.Window.Id = window_id
-// 			return
-// 		}
-// 	}
-// }
+	// Volume
+	volume_status , volume_status_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.Volume" )
+	if volume_status_error != nil { fmt.Println( "Could not get Volume Status" ); panic( volume_status_error ) }
+	spotify.Status.Volume = volume_status.Value().( float64 )
 
-// func ( xdo *Wrapper ) Activate() {
-// 	exec_process( "/bin/bash" , "-c" , fmt.Sprintf( "xdotool windowactivate %d" , xdo.Window.Id ) )
-// }
+	// Position
+	position_status , position_status_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.Position" )
+	if position_status_error != nil { fmt.Println( "Could not get Position Status" ); panic( position_status_error ) }
+	spotify.Status.Position = position_status.Value().( int64 )
 
-// func ( xdo *Wrapper ) Focus() {
-// 	exec_process( "/bin/bash" , "-c" , fmt.Sprintf( "xdotool windowfocus %d" , xdo.Window.Id ) )
-// }
+	fmt.Println( spotify.Status )
+}
 
-// func ( xdo *Wrapper ) Refocus() {
-// 	xdo.Activate()
-// 	sleep_duration , _ := time.ParseDuration( "300ms" )
+func ( spotify *Controller ) Next() {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.Next" , 0 )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+func ( spotify *Controller ) Previous() {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.Previous" , 0 )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+func ( spotify *Controller ) Pause() {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.Pause" , 0 )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+func ( spotify *Controller ) Play() {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.Play" , 0 )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+func ( spotify *Controller ) PlayPause() {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.PlayPause" , 0 )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+func ( spotify *Controller ) Stop() {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.Stop" , 0 )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+func ( spotify *Controller ) OpenURI( uri string ) {
+	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.OpenUri" , 0 ,  uri )
+	if result.Err != nil { panic( result.Err ) }
+	time.Sleep( 1 * time.Second )
+	spotify.UpdateStatus()
+}
+
+// func ( spotify *Controller ) Seek( seconds string ) {
+// 	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.Seek" , 0 ,  seconds )
+// 	if result.Err != nil { panic( result.Err ) }
+// 	sleep_duration , _ := time.ParseDuration( "600ms" )
 // 	time.Sleep( sleep_duration )
-// 	xdo.Focus()
+// 	metadata , err := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.Metadata" )
+// 	if err != nil { panic( err ) }
+// 	fmt.Println( metadata )
 // }
 
-// func ( xdo *Wrapper ) GetGeometry() {
-// 	xdo.Refocus()
-// 	info := exec_process( "/bin/bash" , "-c" , "xdotool getactivewindow getwindowgeometry" )
-// 	lines := strings.Split( info , "\n" )
-// 	geometry_components := strings.Split( strings.Split( lines[ 2 ] , "Geometry: " )[ 1 ] , "x" )
-// 	xdo.Window.Geometry.X , _ = strconv.Atoi( geometry_components[0] )
-// 	xdo.Window.Geometry.Y , _ = strconv.Atoi( geometry_components[1] )
-// 	xdo.Window.Geometry.Center.X = ( xdo.Window.Geometry.X / 2 )
-// 	xdo.Window.Geometry.Center.Y = ( xdo.Window.Geometry.Y / 2 )
-// }
-
-// func ( xdo *Wrapper ) UnMaximize() {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , fmt.Sprintf( "wmctrl -rf %d -b remove,maximized_ver,maximized_horz" , xdo.Window.Id ) )
-// }
-
-// func ( xdo *Wrapper ) Maximize() {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , "xdotool key F11" )
-// }
-
-// func ( xdo *Wrapper ) FullScreen() {
-// 	xdo.Maximize()
-// }
-
-// func ( xdo *Wrapper ) MoveMouse( X int , Y int ) {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , fmt.Sprintf( "xdotool mousemove %d %d" , X , Y ) )
-// }
-
-// func ( xdo *Wrapper ) LeftClick() {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , "xdotool click 1" )
-// }
-
-// func ( xdo *Wrapper ) RightClick() {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , "xdotool click 2" )
-// }
-
-// func ( xdo *Wrapper ) DoubleClick() {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , "xdotool click --repeat 2 --delay 200 1" )
-// }
-
-// func ( xdo *Wrapper ) CenterMouse() {
-// 	xdo.Refocus()
-// 	xdo.MoveMouse( xdo.Window.Geometry.Center.X , xdo.Window.Geometry.Center.Y )
-// }
-
-// func ( xdo *Wrapper ) PressKey( key string ) {
-// 	xdo.Refocus()
-// 	exec_process( "/bin/bash" , "-c" , fmt.Sprintf( "xdotool key '%s'" , key )  )
+// func ( spotify *Controller ) SetPosition( track_id string , position int ) {
+// 	result := spotify.dbus.Call( "org.mpris.MediaPlayer2.Player.SetPosition" , 0 , track_id , position )
+// 	if result.Err != nil { panic( result.Err ) }
+// 	sleep_duration , _ := time.ParseDuration( "600ms" )
+// 	time.Sleep( sleep_duration )
+// 	metadata , err := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.Metadata" )
+// 	if err != nil { panic( err ) }
+// 	fmt.Println( metadata )
 // }

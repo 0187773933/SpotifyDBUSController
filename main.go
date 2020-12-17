@@ -1,7 +1,7 @@
 package main
 
 import (
-	spotify_dbus "github.com/0187773933/SpotifyDBusController/controller"
+	spotify_dbus "github.com/0187773933/SpotifyDBUSController/controller"
 	"time"
 )
 

@@ -60,10 +60,12 @@ func ( spotify *Controller ) Metadata() {
 	fmt.Println( metadata )
 }
 
-func ( spotify *Controller ) PlaybackStatus() ( godbus.Variant ) {
+func ( spotify *Controller ) PlaybackStatus() ( string ) {
 	playback_status , playback_status_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.PlaybackStatus" )
 	if playback_status_error != nil { fmt.Println( "Could not get Playback Status" ); panic( playback_status_error ) }
-	return playback_status
+	status = playback_status.String()
+	status = status[ 1 : ( len( status )-1 ) ] // Removes Quotes
+	return status
 }
 
 func ( spotify *Controller ) UpdateStatus() {

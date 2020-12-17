@@ -1,1 +1,3 @@
 github.com/0187773933/SpotifyDBusController v0.0.0-20200626212457-818ba06fbae3 h1:sjKCuvRZfGJA1rd3tPrmdenFd8xfZ+fdbp72jFZjBC0=
+github.com/godbus/dbus v4.1.0+incompatible h1:WqqLRTsQic3apZUK9qC5sGNfXthmPXzUZ7nQPrNITa4=
+github.com/godbus/dbus v4.1.0+incompatible/go.mod h1:/YcGZj5zSblfDWMMoOzV4fas9FZnQYTkDnsGvmh2Grw=

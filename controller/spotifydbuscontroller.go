@@ -96,8 +96,6 @@ func ( spotify *Controller ) UpdateStatus() {
 	position_status , position_status_error := spotify.dbus.GetProperty( "org.mpris.MediaPlayer2.Player.Position" )
 	if position_status_error != nil { fmt.Println( "Could not get Position Status" ); panic( position_status_error ) }
 	spotify.Status.Position = position_status.Value().( int64 )
-
-	fmt.Println( spotify.Status )
 }
 
 func ( spotify *Controller ) Next() {
